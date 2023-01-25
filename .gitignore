@@ -1,0 +1,10 @@
+*.pyc
+*.pyo
+*.csv
+*.py[cod]
+
+__pycache__/
+catboost_info/
+catboost_info/*
+
+roughwork.md

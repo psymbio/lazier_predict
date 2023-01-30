@@ -16,7 +16,7 @@ from sklearn.datasets import load_breast_cancer
 data = load_breast_cancer()
 X = data.data
 y = data.target
-clf = lazierClassifier(verbose = 0, ignore_warnings = False, custom_metric = None)
+clf = LazierClassifier(verbose = 0, ignore_warnings = False, custom_metric = None)
 
 # simple lazypredict
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True)

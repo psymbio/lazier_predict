@@ -17,6 +17,7 @@ from sklearn.preprocessing import (
     PowerTransformer,
     OneHotEncoder, 
     OrdinalEncoder,
+    LabelEncoder
 )
 
 from sklearn.compose import ColumnTransformer
@@ -301,7 +302,7 @@ class LazierClassifier:
         else:
             stratify_method = y
         
-        le = preprocessing.LabelEncoder()
+        le = LabelEncoder()
         le = le.fit(y)
         y = le.transform(y)
         print(np.unique(y))

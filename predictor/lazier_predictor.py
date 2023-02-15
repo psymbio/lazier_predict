@@ -304,6 +304,7 @@ class LazierClassifier:
         le = preprocessing.LabelEncoder()
         le = le.fit(y)
         y = le.transform(y)
+        print(np.unique(y))
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, train_size = train_size, stratify = stratify_method, shuffle = shuffle, random_state = random_state)
         
         Accuracy = []

@@ -1,7 +1,5 @@
-
-from predictor.lazier_predictor import LazierClassifier
-
-if __name__ == "__main__":
+def run_classifier():
+    from predictor.lazier_predictor import LazierClassifier
     from sklearn.datasets import load_breast_cancer
     data = load_breast_cancer()
     X = data.data
@@ -48,3 +46,20 @@ if __name__ == "__main__":
     models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True)
     models.to_csv("lazier_models_wine.csv")
     predictions.to_csv("lazier_predictions_wine.csv")
+
+def run_regressor():
+    from predictor.lazier_predictor import LazierRegressor
+    from sklearn.datasets import load_boston
+    boston = load_boston()
+    X, y = boston.data, boston.target
+    reg = LazierRegressor(verbose = 0,ignore_warnings = False, custom_metric = None)
+    models, predictions = reg.fit(X, y, test_size = 0.20, random_state = None, shuffle = True)
+    models.to_csv("lazier_models_boston.csv")
+    predictions.to_csv("lazier_predictions_boston.csv")
+    models, predictions = reg.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, transformer_method = "all")
+    models.to_csv("lazier_models_transformer_boston.csv")
+    predictions.to_csv("lazier_predictions_transformer_boston.csv")
+
+if __name__ == "__main__":
+    run_classifier()
+    run_regressor()

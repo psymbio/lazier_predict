@@ -795,3 +795,292 @@ class LazierClassifier:
             self.fit(X_train, X_test, y_train, y_test)
 
         return self.models
+
+def adjusted_rsquared(r2, n, p):
+    return 1 - (1 - r2) * ((n - 1) / (n - p - 1))
+
+class LazierRegressor:
+    """
+    This module helps in fitting to all the classification algorithms that are available in Scikit-learn
+    Parameters
+    ----------
+    verbose : int, optional (default=0)
+        For the liblinear and lbfgs solvers set verbose to any positive
+        number for verbosity.
+    ignore_warnings : bool, optional (default=True)
+        When set to True, the warning related to algorigms that are not able to run are ignored.
+    custom_metric : function, optional (default=None)
+        When function is provided, models are evaluated based on the custom evaluation metric provided.
+    prediction : bool, optional (default=False)
+        When set to True, the predictions of all the models models are returned as dataframe.
+    classifiers : list, optional (default="all")
+        When function is provided, trains the chosen classifier(s).
+    """
+    def __init__(
+        self,
+        verbose=0,
+        ignore_warnings = True,
+        custom_metric = None,
+        predictions = False,
+        random_state = 42,
+        regressors = "all",
+    ):
+        self.verbose = verbose
+        self.ignore_warnings = ignore_warnings
+        self.custom_metric = custom_metric
+        self.predictions = predictions
+        self.models = {}
+        self.random_state = random_state
+        self.regressors = regressors
+    
+    def fit(self, 
+        X, 
+        y, 
+        test_size = None,
+        train_size = None,
+        random_state = None,
+        shuffle = True, 
+        stratify = None,
+        transformer_method = None,
+    ):
+        """Fit Classification algorithms on data.
+        Parameters
+        ----------
+        X : array-like,
+            Features
+        y : array-like,
+            Class Labels
+        test_size : float or int, default = None
+            If float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the test split. If int, represents the absolute number of test samples. If None, the value is set to the complement of the train size. If train_size is also None, it will be set to 0.25.
+        train_size : float or int, default = None
+            If float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the train split. If int, represents the absolute number of train samples. If None, the value is automatically set to the complement of the test size.
+        random_state : int, RandomState instance or None, default = None
+            Controls the shuffling applied to the data before applying the split. Pass an int for reproducible output across multiple function calls.
+        shuffle : bool, default = True
+            Whether or not to shuffle the data before splitting. If shuffle=False then stratify must be None.
+        stratify : array-like, default = None
+            If not None, data is split in a stratified fashion, using this as the class labels.
+        Returns
+        -------
+        scores : Pandas DataFrame
+            Returns metrics of all the models in a Pandas DataFrame.
+        predictions : Pandas DataFrame
+            Returns predictions of all the models in a Pandas DataFrame.
+        """        
+        transformer_method_list = []
+        if transformer_method == None:
+            transformer_method_list = []
+        elif transformer_method == "all":
+            transformer_method_list = TRANSFOMER_METHODS
+        else:
+            transformer_method_list = transformer_method
+
+        stratify_method = None
+        if stratify == None:
+            stratify_method = None
+        else:
+            stratify_method = y
+        
+        # le = LabelEncoder()
+        # le = le.fit(y)
+        # y = le.transform(y)
+        # print(np.unique(y))
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, train_size = train_size, stratify = stratify_method, shuffle = shuffle, random_state = random_state)
+        
+        R2 = []
+        ADJR2 = []
+        RMSE = []
+        # WIN = []
+        names = []
+        TIME = []
+        predictions = {}
+
+        if self.custom_metric:
+            CUSTOM_METRIC = []
+
+        if isinstance(X_train, np.ndarray):
+            X_train = pd.DataFrame(X_train)
+            X_test = pd.DataFrame(X_test)
+
+        numeric_features = X_train.select_dtypes(include=[np.number]).columns
+        categorical_features = X_train.select_dtypes(include=["object"]).columns
+
+        categorical_low, categorical_high = get_card_split(
+            X_train, categorical_features
+        )
+
+        preprocessor = ColumnTransformer(
+            transformers=[
+                ("numeric", numeric_transformer, numeric_features),
+                ("categorical_low", categorical_transformer_low, categorical_low),
+                ("categorical_high", categorical_transformer_high, categorical_high),
+            ]
+        )
+
+        if self.regressors == "all":
+            self.regressors = REGRESSORS
+        else:
+            try:
+                temp_list = []
+                for regressor in self.regressors:
+                    full_name = (regressor.__name__, regressor)
+                    temp_list.append(full_name)
+                self.regressors = temp_list
+            except Exception as exception:
+                print(exception)
+                print("Invalid Regressor(s)")
+
+        if transformer_method == None:
+            for name, model in tqdm(self.regressors):
+                start = time.time()
+                try:
+                    if "random_state" in model().get_params().keys():
+                        pipe = Pipeline(
+                            steps=[
+                                ("preprocessor", preprocessor),
+                                ("regressor", model(random_state=self.random_state)),
+                            ]
+                        )
+                    else:
+                        pipe = Pipeline(
+                            steps=[("preprocessor", preprocessor), ("regressor", model())]
+                        )
+
+                    pipe.fit(X_train, y_train)
+                    self.models[name] = pipe
+                    y_pred = pipe.predict(X_test)
+                    r_squared = r2_score(y_test, y_pred)
+                    adj_rsquared = adjusted_rsquared(
+                        r_squared, X_test.shape[0], X_test.shape[1]
+                    )
+                    rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+                    names.append(name)
+                    R2.append(r_squared)
+                    ADJR2.append(adj_rsquared)
+                    RMSE.append(rmse)
+                    TIME.append(time.time() - start)
+
+                    if self.custom_metric:
+                        custom_metric = self.custom_metric(y_test, y_pred)
+                        CUSTOM_METRIC.append(custom_metric)
+
+                    if self.verbose > 0:
+                        scores_verbose = {
+                            "Model": name,
+                            "R-Squared": r_squared,
+                            "Adjusted R-Squared": adj_rsquared,
+                            "RMSE": rmse,
+                            "Time taken": time.time() - start,
+                        }
+
+                        if self.custom_metric:
+                            scores_verbose[self.custom_metric.__name__] = custom_metric
+
+                        print(scores_verbose)
+                    if self.predictions:
+                        predictions[name] = y_pred
+                except Exception as exception:
+                    if self.ignore_warnings is False:
+                        print(name + " model failed to execute")
+                        print(exception)
+
+            scores = {
+                "Model": names,
+                "Adjusted R-Squared": ADJR2,
+                "R-Squared": R2,
+                "RMSE": RMSE,
+                "Time Taken": TIME,
+            }
+
+            if self.custom_metric:
+                scores[self.custom_metric.__name__] = CUSTOM_METRIC
+
+            scores = pd.DataFrame(scores)
+            scores = scores.sort_values(by="Adjusted R-Squared", ascending=False).set_index(
+                "Model"
+            )
+
+            if self.predictions:
+                predictions_df = pd.DataFrame.from_dict(predictions)
+            return scores, predictions_df if self.predictions is True else scores
+        elif transformer_method != None:
+            for transformer_method_name, transformer_method_model in tqdm(transformer_method_list):
+                for name, model in tqdm(self.regressors):
+                    # print(transformer_method_name, name)
+                    start = time.time()
+                    try:
+                        if "random_state" in model().get_params().keys():
+                            pipe = Pipeline(
+                                steps=[
+                                    ("preprocessor", preprocessor),
+                                    ("transformer", transformer_method_model()), 
+                                    ("regressor", model(random_state=self.random_state)),
+                                ]
+                            )
+                        else:
+                            pipe = Pipeline(
+                                steps=[
+                                ("preprocessor", preprocessor), 
+                                ("transformer", transformer_method_model()), 
+                                ("regressor", model())]
+                            )
+                        # print(pipe)
+                        pipe.fit(X_train, y_train)
+                        self.models[name + " (" + transformer_method_name + ")"] = pipe
+                        y_pred = pipe.predict(X_test)
+                        r_squared = r2_score(y_test, y_pred)
+                        adj_rsquared = adjusted_rsquared(
+                            r_squared, X_test.shape[0], X_test.shape[1]
+                        )
+                        rmse = np.sqrt(mean_squared_error(y_test, y_pred))
+
+                        names.append(name + " (" + transformer_method_name + ")")
+                        R2.append(r_squared)
+                        ADJR2.append(adj_rsquared)
+                        RMSE.append(rmse)
+                        TIME.append(time.time() - start)
+                        # print(names[-1], R2[-1], RMSE[-1])
+                        if self.custom_metric:
+                            custom_metric = self.custom_metric(y_test, y_pred)
+                            CUSTOM_METRIC.append(custom_metric)
+
+                        if self.verbose > 0:
+                            scores_verbose = {
+                                "Model": name + " (" + transformer_method_name + ")",
+                                "R-Squared": r_squared,
+                                "Adjusted R-Squared": adj_rsquared,
+                                "RMSE": rmse,
+                                "Time taken": time.time() - start,
+                            }
+
+                            if self.custom_metric:
+                                scores_verbose[self.custom_metric.__name__] = custom_metric
+
+                            print(scores_verbose)
+                        if self.predictions:
+                            predictions[name + " (" + transformer_method_name + ")"] = y_pred
+                    except Exception as exception:
+                        if self.ignore_warnings is False:
+                            print(name + " (" + transformer_method_name + ")" + " model failed to execute")
+                            print(exception)
+            scores = {
+                "Model": names,
+                "Adjusted R-Squared": ADJR2,
+                "R-Squared": R2,
+                "RMSE": RMSE,
+                "Time Taken": TIME,
+            }
+
+            if self.custom_metric:
+                scores[self.custom_metric.__name__] = CUSTOM_METRIC
+
+            scores = pd.DataFrame(scores)
+            scores = scores.sort_values(by="Adjusted R-Squared", ascending=False).set_index(
+                "Model"
+            )
+
+            if self.predictions:
+                predictions_df = pd.DataFrame.from_dict(predictions)
+            return scores, predictions_df if self.predictions is True else scores
+        

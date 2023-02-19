@@ -10,48 +10,61 @@ Additional Feature/Why it exists even when lazypredict already does:
 
 Other than that, I guess it's also for people that don't care too much about the time it takes to find the best model and they are lazier.
 
-Usage:
-```python3
+Usage for classifier:
+```python
+from predictor.lazier_predictor import LazierClassifier
 from sklearn.datasets import load_breast_cancer
 data = load_breast_cancer()
 X = data.data
 y = data.target
 clf = LazierClassifier(verbose = 0, ignore_warnings = False, custom_metric = None)
 
-# simple lazypredict
+# simple lazierpredict classifier
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True)
 models.to_csv("lazier_models_cancer.csv")
 predictions.to_csv("lazier_predictions_cancer.csv")
 
-# lazypredict + oversampling
+# lazierpredict classifier + oversampling
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True, sampling_method = "over_sample")
 models.to_csv("lazier_models_over_sample_cancer.csv")
 predictions.to_csv("lazier_predictions_over_sample_cancer.csv")
 
-# lazypredict + undersampling
+# lazierpredict classifier + undersampling
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True, sampling_method = "under_sample")
 models.to_csv("lazier_models_under_sample_cancer.csv")
 predictions.to_csv("lazier_predictions_under_sample_cancer.csv")
 
-# lazypredict + transform
+# lazierpredict classifier + transform
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True, transformer_method = "all")
 models.to_csv("lazier_models_transformer_cancer.csv")
 predictions.to_csv("lazier_predictions_transformer_cancer.csv")
 
-# lazypredict + transform + oversampling
+# lazierpredict classifier + transform + oversampling
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True, sampling_method = "over_sample", transformer_method = "all")
 models.to_csv("lazier_models_over_sample_transformer_cancer.csv")
 predictions.to_csv("lazier_predictions_over_sample_transformer_cancer.csv")
 
-# lazypredict + transform + undersampling
+# lazierpredict classifier + transform + undersampling
 models, predictions = clf.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, stratify = True, sampling_method = "under_sample", transformer_method = "all")
 models.to_csv("lazier_models_under_sample_transformer_cancer.csv")
 predictions.to_csv("lazier_predictions_under_sample_transformer_cancer.csv")
 ```
 
+Usage for regressor:
+```python
+from predictor.lazier_predictor import LazierRegressor
+from sklearn.datasets import load_boston
+boston = load_boston()
+X, y = boston.data, boston.target
+print(X.shape, y.shape)
+reg = LazierRegressor(verbose = 0,ignore_warnings = False, custom_metric = None)
+models, predictions = reg.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, transformer_method = "all")
+models.to_csv("lazier_models_boston.csv")
+predictions.to_csv("lazier_predictions_boston.csv")
+```
+
 Working on:
 1. Adding more metrics
-2. LazierRegressor
 3. Hyperparameter Tuning (best models get tuned)
 4. Pipeline Stacking (best models get stacked)
 5. etc.

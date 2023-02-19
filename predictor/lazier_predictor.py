@@ -241,12 +241,16 @@ class LazierClassifier:
         self.classifiers = classifiers
     
     def fit(self, 
-        X, 
-        y, 
+        X,
+        y,
+        X_train = None,
+        y_train = None,
+        X_test = None,
+        y_test = None,
         test_size = None,
         train_size = None,
         random_state = None,
-        shuffle = True, 
+        shuffle = True,
         stratify = None,
         sampling_method = None,
         transformer_method = None,
@@ -302,11 +306,14 @@ class LazierClassifier:
         else:
             stratify_method = y
         
-        le = LabelEncoder()
-        le = le.fit(y)
-        y = le.transform(y)
-        print(np.unique(y))
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, train_size = train_size, stratify = stratify_method, shuffle = shuffle, random_state = random_state)
+        if X != None and y != None:
+            le = LabelEncoder()
+            le = le.fit(y)
+            y = le.transform(y)
+            print(np.unique(y))
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, train_size = train_size, stratify = stratify_method, shuffle = shuffle, random_state = random_state)
+        else:
+            pass
         
         Accuracy = []
         B_Accuracy = []
@@ -834,8 +841,12 @@ class LazierRegressor:
         self.regressors = regressors
     
     def fit(self, 
-        X, 
-        y, 
+        X = None, 
+        y = None,
+        X_train = None,
+        y_train = None,
+        X_test = None,
+        y_test = None,
         test_size = None,
         train_size = None,
         random_state = None,
@@ -881,11 +892,10 @@ class LazierRegressor:
         else:
             stratify_method = y
         
-        # le = LabelEncoder()
-        # le = le.fit(y)
-        # y = le.transform(y)
-        # print(np.unique(y))
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, train_size = train_size, stratify = stratify_method, shuffle = shuffle, random_state = random_state)
+        if X != None and y != None:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = test_size, train_size = train_size, stratify = stratify_method, shuffle = shuffle, random_state = random_state)
+        else:
+            pass
         
         R2 = []
         ADJR2 = []

@@ -241,8 +241,8 @@ class LazierClassifier:
         self.classifiers = classifiers
     
     def fit(self, 
-        X,
-        y,
+        X = None,
+        y = None,
         X_train = None,
         y_train = None,
         X_test = None,

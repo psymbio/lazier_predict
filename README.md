@@ -12,7 +12,7 @@ Other than that, I guess it's also for people that don't care too much about the
 
 Usage for classifier:
 ```python
-from predictor.lazier_predictor import LazierClassifier
+from lazier_predict.predictor.lazier_predictor import LazierClassifier
 from sklearn.datasets import load_breast_cancer
 data = load_breast_cancer()
 X = data.data
@@ -52,15 +52,22 @@ predictions.to_csv("lazier_predictions_under_sample_transformer_cancer.csv")
 
 Usage for regressor:
 ```python
-from predictor.lazier_predictor import LazierRegressor
+from lazier_predict.predictor.lazier_predictor import LazierRegressor
 from sklearn.datasets import load_boston
 boston = load_boston()
-X, y = boston.data, boston.target
-print(X.shape, y.shape)
+X = boston.data
+y = boston.target
 reg = LazierRegressor(verbose = 0,ignore_warnings = False, custom_metric = None)
-models, predictions = reg.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, transformer_method = "all")
+
+# lazierpredict regressor
+models, predictions = reg.fit(X, y, test_size = 0.20, random_state = None, shuffle = True)
 models.to_csv("lazier_models_boston.csv")
 predictions.to_csv("lazier_predictions_boston.csv")
+
+# lazierpredict regressor + transform
+models, predictions = reg.fit(X, y, test_size = 0.20, random_state = None, shuffle = True, transformer_method = "all")
+models.to_csv("lazier_models_transform_boston.csv")
+predictions.to_csv("lazier_predictions_transform_boston.csv")
 ```
 
 Working on:
